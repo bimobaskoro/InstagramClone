@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model UserAccount {
+  id             Int           @id @default(autoincrement())
+  firstName      String
+  lastName       String
+  email          String        @unique
+  password       String
+  phone          String        @unique
+  verifyCode     String
+  userData       UserData      @relation(fields: [id], references: [id])
+  UserPost       UserPost[]
+  PostLike       PostLike[]
+  PostComment    PostComment[]
+  Follower       Follow[]      @relation("follower")
+  Following      Follow[]      @relation("following")
+  MessageSender  Message[]     @relation("userSender")
+  MessageReciver Message[]     @relation("userReciver")
+
+  Tags Tags[]
+}
+
+model UserData {
+  id          Int          @id @default(autoincrement())
+  username    String       @unique
+  gender      Gender
+  countryId   Int
+  country     Country      @relation(fields: [countryId], references: [id])
+  UserAccount UserAccount?
+}
+
+enum Gender {
+  male
+  female
+}
+
+model Country {
+  id           Int        @id
+  country_name String     @unique
+  user         UserData[]
+}
+
+model Follow {
+  userId      Int
+  followingId Int
+  follower    UserAccount @relation("follower", fields: [userId], references: [id])
+  following   UserAccount @relation("following", fields: [followingId], references: [id])
+
+  @@id([userId, followingId])
+}
+
+model Post {
+  id          Int           @id @default(autoincrement())
+  music       String
+  location    String
+  postUrl     String
+  tagUsers    Int
+  tag         Tags          @relation(fields: [tagUsers], references: [id])
+  UserPost    UserPost[]
+  PostItem    PostItem[]
+  PostLike    PostLike[]
+  PostComment PostComment[]
+}
+
+model UserPost {
+  userId Int
+  postId Int
+  user   UserAccount @relation(fields: [userId], references: [id])
+  post   Post        @relation(fields: [postId], references: [id])
+
+  @@id([userId, postId])
+}
+
+model PostItem {
+  postId Int
+  post   Post @relation(fields: [postId], references: [id])
+
+  @@id([postId])
+}
+
+model PostLike {
+  postId Int
+  userId Int
+  post   Post        @relation(fields: [postId], references: [id])
+  user   UserAccount @relation(fields: [userId], references: [id])
+
+  @@id([userId, postId])
+}
+
+model PostComment {
+  id      Int         @id @default(autoincrement())
+  userId  Int
+  postId  Int
+  comment String
+  user    UserAccount @relation(fields: [userId], references: [id])
+  post    Post        @relation(fields: [postId], references: [id])
+}
+
+model Message {
+  sender      Int
+  receiver    Int
+  userSender  UserAccount @relation("userSender", fields: [sender], references: [id])
+  userReciver UserAccount @relation("userReciver", fields: [receiver], references: [id])
+
+  @@id([sender, receiver])
+}
+
+model TagDescription {
+  id     Int    @id @default(autoincrement())
+  desc   String
+  tagsId Int
+  tags   Tags   @relation(fields: [tagsId], references: [id])
+}
+
+model Tags {
+  id             Int              @id @default(autoincrement())
+  userId         Int
+  user           UserAccount      @relation(fields: [userId], references: [id])
+  TagDescription TagDescription[]
+  Post           Post[]
+}
